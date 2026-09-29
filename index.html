@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#070a0f" />
+<title>Early Wallet Scanner</title>
+<style>
+:root{--bg:#070a0f;--card:#10151d;--card2:#151c26;--line:#25303d;--text:#f3f7fb;--muted:#92a0b3;--green:#65f59a;--cyan:#69d7ff;--amber:#ffc96b;--red:#ff7e87}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:900px;margin:0 auto;padding:18px}.top{display:flex;align-items:center;justify-content:space-between;margin:8px 0 18px}.brand{font-weight:800;letter-spacing:-.02em;font-size:23px}.pill{font-size:12px;border:1px solid var(--line);padding:6px 9px;border-radius:999px;color:var(--muted)}
+.hero{background:linear-gradient(145deg,#111923,#0d1219);border:1px solid var(--line);border-radius:22px;padding:20px;margin-bottom:16px}.hero h1{font-size:30px;line-height:1.02;margin:0 0 10px;letter-spacing:-.04em}.hero p{color:var(--muted);line-height:1.45;margin:0}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}.card h2{font-size:16px;margin:0 0 10px}.card p{font-size:14px;color:var(--muted);line-height:1.4;margin:0 0 14px}
+button{width:100%;border:0;border-radius:14px;padding:15px 16px;font-size:16px;font-weight:800;background:var(--green);color:#07100a;cursor:pointer}button.secondary{background:#202b38;color:var(--text);border:1px solid #334151}button:disabled{opacity:.45}
+.row{display:flex;gap:9px}.row>*{flex:1}input{width:100%;background:#080c12;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:13px;font-size:15px;outline:none;margin-bottom:9px}
+.status{display:none;margin:14px 0;background:#0c1219;border:1px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--muted);font-size:13px;line-height:1.4}.status.show{display:block}.status strong{color:var(--text)}
+.progress{height:7px;background:#151d27;border-radius:999px;overflow:hidden;margin-top:9px}.bar{height:100%;width:0;background:var(--green);transition:width .2s}
+.section{margin-top:18px}.section h2{font-size:20px;margin:0 0 10px}.sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:var(--card)}table{border-collapse:collapse;width:100%;min-width:650px}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:13px}th{position:sticky;top:0;background:#131b25;color:#9fadc0;font-size:11px;text-transform:uppercase;letter-spacing:.05em}tr:last-child td{border-bottom:0}.wallet{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cyan)}.good{color:var(--green);font-weight:800}.warn{color:var(--amber)}.bad{color:var(--red)}
+.coinCards{display:grid;grid-template-columns:1fr;gap:9px}.coin{padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--card2);display:grid;grid-template-columns:1fr auto;gap:8px}.coin .name{font-weight:800}.coin .meta{color:var(--muted);font-size:12px;margin-top:4px}.gain{font-weight:900;color:var(--green);font-size:18px;text-align:right}.footer{color:#667487;font-size:11px;line-height:1.5;margin:22px 4px}.hidden{display:none!important}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 7px;font-size:11px;color:var(--muted);margin-right:4px}.tiny{font-size:11px;color:var(--muted)}
+@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}.coinCards{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="brand">Wallet Scanner</div><div class="pill">Robinhood Chain • read-only</div></div>
+  <div class="hero">
+    <h1>Find the wallets that get into winners early.</h1>
+    <p>Scan new gainers, reconstruct their earliest token recipients, and surface addresses that show up repeatedly across multiple winners.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Our test coins</h2>
+      <p>Scan COON plus the second contract we saved and look for identical early addresses.</p>
+      <button id="testBtn">Scan 2 Test Coins</button>
+    </div>
+    <div class="card">
+      <h2>Top 10 new gainers</h2>
+      <p>Find newly-created pools under 24 hours old, rank the strongest gainers, then search for repeat early addresses.</p>
+      <button id="topBtn">Scan Top 10 Gainers</button>
+    </div>
+    <div class="card" style="grid-column:1/-1">
+      <h2>Scan any contract</h2>
+      <p>Paste a Robinhood Chain token contract address.</p>
+      <input id="customAddress" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="0x…" />
+      <button class="secondary" id="customBtn">Scan Contract</button>
+    </div>
+  </div>
+
+  <div id="status" class="status"><strong id="statusTitle">Working…</strong><div id="statusText"></div><div class="progress"><div id="bar" class="bar"></div></div></div>
+
+  <div id="gainersSection" class="section hidden">
+    <h2>Top new gainers</h2>
+    <div class="sub" id="gainerSub"></div>
+    <div id="coinCards" class="coinCards"></div>
+  </div>
+
+  <div id="overlapSection" class="section hidden">
+    <h2>Repeat early addresses</h2>
+    <div class="sub">Addresses that appeared among the earliest recipients of 2+ scanned tokens. Infrastructure/contracts are labeled so they can be discounted.</div>
+    <div class="tableWrap"><table><thead><tr><th>Wallet</th><th>Coins</th><th>Buyer ranks</th><th>Median delay</th><th>Type</th><th>Direct sender</th></tr></thead><tbody id="overlapBody"></tbody></table></div>
+  </div>
+
+  <div id="earlySection" class="section hidden">
+    <h2 id="earlyTitle">Early addresses</h2>
+    <div class="sub" id="earlySub"></div>
+    <div class="tableWrap"><table><thead><tr><th>Rank</th><th>Wallet</th><th>Delay</th><th>Time (UTC)</th><th>From</th></tr></thead><tbody id="earlyBody"></tbody></table></div>
+  </div>
+
+  <div class="footer">Research tool only. “Early recipient” is not yet the same as a verified swap buyer; transfers can include smart accounts, distributions, router actions, or other contract activity. Never enter a seed phrase or private key here.</div>
+</div>
+<script>
+const RPC='https://rpc.mainnet.chain.robinhood.com';
+const GT='https://api.geckoterminal.com/api/v2';
+const NETWORK='robinhood';
+const TRANSFER_TOPIC='0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const ZERO='0x0000000000000000000000000000000000000000';
+const TEST_TOKENS=[
+  {symbol:'COON',address:'0x27a0d77264b4bb4bc46f435c63b1f8068cc833d3'},
+  {symbol:'TOKEN2',address:'0x37844c70e005a02824f1bf612fffa064f96a3033'}
+];
+const MAJOR=new Set(['ETH','WETH','USDG','USDC','USDT','DAI','WBTC','BTC','DO']);
+const EARLY_LIMIT=150;
+const EARLY_WINDOW_MIN=180;
+let rpcId=1; const blockTsCache=new Map();
+const $=id=>document.getElementById(id);
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function norm(a){if(!a)return'';a=String(a).toLowerCase().trim();return /^0x[0-9a-f]{40}$/.test(a)?a:''}
+function short(a){return a?`${a.slice(0,8)}…${a.slice(-5)}`:''}
+function fmtDelay(s){s=Math.max(0,Math.round(s)); if(s<60)return `${s}s`; const m=Math.floor(s/60),r=s%60; return m<60?`${m}m ${r}s`:`${Math.floor(m/60)}h ${m%60}m`}
+function money(x){x=Number(x||0);return x>=1e6?`$${(x/1e6).toFixed(1)}M`:x>=1e3?`$${(x/1e3).toFixed(1)}K`:`$${x.toFixed(0)}`}
+function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function status(title,text,pct=0){$('status').classList.add('show');$('statusTitle').textContent=title;$('statusText').textContent=text;$('bar').style.width=`${Math.max(0,Math.min(100,pct))}%`}
+function done(text='Finished'){status('Done',text,100);setTimeout(()=>$('status').classList.remove('show'),3500)}
+function fail(e){console.error(e);status('Could not finish',e?.message||String(e),100);$('bar').style.background='var(--red)'}
+function resetProgressColor(){$('bar').style.background='var(--green)'}
+async function fetchJSON(url,opts={}){const r=await fetch(url,opts); if(!r.ok)throw new Error(`${r.status} ${r.statusText}`); return await r.json()}
+async function rpc(method,params){const j=await fetchJSON(RPC,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:rpcId++,method,params})}); if(j.error)throw new Error(j.error.message||JSON.stringify(j.error)); return j.result}
+async function latestBlock(){return parseInt(await rpc('eth_blockNumber',[]),16)}
+async function blockTs(n){if(blockTsCache.has(n))return blockTsCache.get(n);const b=await rpc('eth_getBlockByNumber',['0x'+n.toString(16),false]);if(!b)throw new Error('Block lookup failed');const t=parseInt(b.timestamp,16);blockTsCache.set(n,t);return t}
+async function firstBlockAt(ts,hi){let lo=0;if(ts>=await blockTs(hi))return hi;while(lo<hi){const mid=Math.floor((lo+hi)/2);if(await blockTs(mid)<ts)lo=mid+1;else hi=mid}return lo}
+function topicAddress(t){return t&&t.length>=42?'0x'+t.slice(-40).toLowerCase():''}
+async function adaptiveLogs(token,start,end){let cur=start,chunk=5000,out=[];while(cur<=end){const hi=Math.min(end,cur+chunk-1);try{const logs=await rpc('eth_getLogs',[{fromBlock:'0x'+cur.toString(16),toBlock:'0x'+hi.toString(16),address:token,topics:[TRANSFER_TOPIC]}]);out.push(...(logs||[]));cur=hi+1;if((logs||[]).length<500&&chunk<5000)chunk=Math.min(5000,chunk*2)}catch(e){if(chunk<=100)throw e;chunk=Math.max(100,Math.floor(chunk/2))}}return out}
+async function getPools(token){const j=await fetchJSON(`${GT}/networks/${NETWORK}/tokens/${token}/pools?page=1&include=base_token,quote_token`);await sleep(2100);return j.data||[]}
+async function launchInfo(token,label=''){const pools=await getPools(token);if(!pools.length)throw new Error(`No indexed pools found yet for ${short(token)}`);let earliest=null,symbol=label||short(token),poolAddresses=[];for(const p of pools){const a=p.attributes||{};if(a.pool_created_at){const d=new Date(a.pool_created_at);if(!earliest||d<earliest)earliest=d}const pa=norm(a.address)||norm((p.id||'').split('_').pop());if(pa)poolAddresses.push(pa);if(!label&&a.name)symbol=a.name.split('/')[0].trim().split(/\s+/)[0]}if(!earliest)throw new Error('No pool creation timestamp found');return{launch:earliest,pools:[...new Set(poolAddresses)],symbol}}
+async function scanToken(token,label='',progressBase=0,progressSpan=100){token=norm(token);if(!token)throw new Error('Invalid contract address');status(`Loading ${label||short(token)}`,'Finding earliest pool and launch time…',progressBase+progressSpan*.05);const info=await launchInfo(token,label);const launchTs=Math.floor(info.launch.getTime()/1000);const endTs=Math.min(Math.floor(Date.now()/1000),launchTs+EARLY_WINDOW_MIN*60);status(`Scanning ${info.symbol}`,'Locating launch block…',progressBase+progressSpan*.18);const latest=await latestBlock();const startBlock=await firstBlockAt(launchTs,latest);const endBlock=await firstBlockAt(endTs,latest);status(`Scanning ${info.symbol}`,`Reading token transfers after launch…`,progressBase+progressSpan*.35);const logs=await adaptiveLogs(token,Math.max(0,startBlock-50),Math.max(startBlock,endBlock));logs.sort((a,b)=>parseInt(a.blockNumber,16)-parseInt(b.blockNumber,16)||(parseInt(a.logIndex||'0x0',16)-parseInt(b.logIndex||'0x0',16)));const excluded=new Set([ZERO,token,...info.pools.map(norm)]);const seen=new Set(),rows=[];let i=0;for(const lg of logs){i++;const topics=lg.topics||[];if(topics.length<3)continue;const from=topicAddress(topics[1]),to=topicAddress(topics[2]);if(!to||excluded.has(to)||from===ZERO||seen.has(to))continue;const bn=parseInt(lg.blockNumber,16),ts=await blockTs(bn);if(ts<launchTs-5)continue;seen.add(to);rows.push({token_symbol:info.symbol,token_address:token,wallet:to,buyer_rank:rows.length+1,timestamp:new Date(ts*1000).toISOString(),delay_seconds:Math.max(0,ts-launchTs),tx_hash:(lg.transactionHash||'').toLowerCase(),from_address:from});if(rows.length>=EARLY_LIMIT)break;if(i%30===0)status(`Scanning ${info.symbol}`,`Found ${rows.length} early addresses…`,progressBase+progressSpan*(.35+.5*Math.min(1,i/Math.max(1,logs.length))))}status(`Scanning ${info.symbol}`,`Found ${rows.length} early addresses.`,progressBase+progressSpan*.92);return{info,rows,token}}
+async function codeType(a){try{const c=await rpc('eth_getCode',[a,'latest']);return(!c||c==='0x'||c==='0x0')?'EOA':'contract'}catch{return'unknown'}}
+async function txSender(h){try{return norm((await rpc('eth_getTransactionByHash',[h]))?.from)}catch{return''}}
+async function overlaps(scans){const m=new Map();for(const s of scans)for(const r of s.rows){if(!m.has(r.wallet))m.set(r.wallet,[]);m.get(r.wallet).push(r)}const cand=[...m.entries()].filter(([w,rs])=>new Set(rs.map(x=>x.token_address)).size>=2);const out=[];for(let i=0;i<cand.length;i++){const [wallet,rs]=cand[i];status('Checking repeated addresses',`${i+1} of ${cand.length}: ${short(wallet)}`,92+7*(i/Math.max(1,cand.length)));const ranks=rs.map(x=>x.buyer_rank).sort((a,b)=>a-b),delays=rs.map(x=>x.delay_seconds).sort((a,b)=>a-b);const median=a=>a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2;let direct=0,checked=0;for(const r of rs){if(r.tx_hash){checked++;if(await txSender(r.tx_hash)===wallet)direct++}}out.push({wallet,tokens_seen:new Set(rs.map(x=>x.token_address)).size,symbols:[...new Set(rs.map(x=>x.token_symbol))],ranks:rs.map(x=>`${x.token_symbol}#${x.buyer_rank}`),median_rank:median(ranks),median_delay:median(delays),type:await codeType(wallet),direct,checked})}out.sort((a,b)=>b.tokens_seen-a.tokens_seen||a.median_rank-b.median_rank);return out}
+function renderOverlap(data){$('overlapSection').classList.remove('hidden');const b=$('overlapBody');b.innerHTML='';if(!data.length){b.innerHTML='<tr><td colspan="6" class="tiny">No repeated early address was found in this scan.</td></tr>';return}for(const x of data){const tr=document.createElement('tr');tr.innerHTML=`<td class="wallet">${esc(short(x.wallet))}</td><td class="good">${x.tokens_seen}<div class="tiny">${esc(x.symbols.join(' • '))}</div></td><td>${esc(x.ranks.join(' • '))}</td><td>${esc(fmtDelay(x.median_delay))}</td><td class="${x.type==='EOA'?'good':'warn'}">${esc(x.type)}</td><td>${x.direct}/${x.checked}</td>`;b.appendChild(tr)}}
+function renderEarly(scan){$('earlySection').classList.remove('hidden');$('earlyTitle').textContent=`${scan.info.symbol} early addresses`;$('earlySub').textContent=`Pool launch ${scan.info.launch.toISOString()} • first ${scan.rows.length} unique recipients in the first ${EARLY_WINDOW_MIN} minutes`;$('earlyBody').innerHTML=scan.rows.slice(0,150).map(r=>`<tr><td>${r.buyer_rank}</td><td class="wallet">${esc(short(r.wallet))}</td><td>${esc(fmtDelay(r.delay_seconds))}</td><td>${esc(r.timestamp.replace('T',' ').replace('.000Z','Z'))}</td><td class="wallet">${esc(short(r.from_address))}</td></tr>`).join('')}
+async function runTests(){resetProgressColor();$('overlapSection').classList.add('hidden');$('earlySection').classList.add('hidden');$('gainersSection').classList.add('hidden');$('testBtn').disabled=true;$('topBtn').disabled=true;try{const scans=[];for(let i=0;i<TEST_TOKENS.length;i++)scans.push(await scanToken(TEST_TOKENS[i].address,TEST_TOKENS[i].symbol,i*43,43));renderEarly(scans[0]);const o=await overlaps(scans);renderOverlap(o);done(`Scanned ${scans.length} tokens and found ${o.length} repeated early addresses.`)}catch(e){fail(e)}finally{$('testBtn').disabled=false;$('topBtn').disabled=false}}
+function includedMap(j){const m=new Map();for(const x of (j.included||[]))m.set(x.id,{...(x.attributes||{}),address:norm((x.attributes||{}).address)||norm((x.id||'').split('_').pop())});return m}
+function chooseToken(baseId,quoteId,m){const b=m.get(baseId)||{},q=m.get(quoteId)||{};const bs=String(b.symbol||'').toUpperCase(),qs=String(q.symbol||'').toUpperCase();if(MAJOR.has(bs)&&qs&&!MAJOR.has(qs))return{address:q.address,symbol:q.symbol||'',name:q.name||''};return{address:b.address,symbol:b.symbol||'',name:b.name||''}}
+async function discoverGainers(){status('Finding new coins','Loading newly-created Robinhood Chain pools…',4);let pools=[],inc=[];for(let page=1;page<=3;page++){const j=await fetchJSON(`${GT}/networks/${NETWORK}/new_pools?page=${page}&include=base_token,quote_token`);pools.push(...(j.data||[]));inc.push(...(j.included||[]));status('Finding new coins',`Loaded page ${page} of 3…`,4+page*5);await sleep(2100)}const j={included:inc},m=includedMap(j),best=new Map(),now=Date.now();for(const p of pools){const a=p.attributes||{},rel=p.relationships||{},baseId=rel.base_token?.data?.id||'',quoteId=rel.quote_token?.data?.id||'';const t=chooseToken(baseId,quoteId,m);if(!norm(t.address)||!a.pool_created_at)continue;const age=(now-new Date(a.pool_created_at).getTime())/36e5;if(age<0||age>24)continue;const liq=Number(a.reserve_in_usd||0),vol=Number(a.volume_usd?.h24||0);if(liq<1000||vol<1000)continue;let gain=null,window='';for(const k of ['h24','h6','h1','m5'])if(a.price_change_percentage?.[k]!=null){gain=Number(a.price_change_percentage[k]);window=k;break}if(!Number.isFinite(gain))continue;const c={token_address:norm(t.address),symbol:t.symbol||short(t.address),name:t.name||'',pool_address:norm(a.address)||norm((p.id||'').split('_').pop()),created:a.pool_created_at,age,gain,window,liq,vol,fdv:Number(a.fdv_usd||0),marketcap:Number(a.market_cap_usd||0)};const prev=best.get(c.token_address);if(!prev||c.liq>prev.liq)best.set(c.token_address,c)}return[...best.values()].sort((a,b)=>b.gain-a.gain).slice(0,10)}
+function renderGainers(gs){$('gainersSection').classList.remove('hidden');$('gainerSub').textContent=`Ranked from newly-created pools under 24h old with at least $1K liquidity and $1K 24h volume.`;$('coinCards').innerHTML=gs.map((g,i)=>`<div class="coin"><div><div class="name">#${i+1} ${esc(g.symbol)}</div><div class="meta">Age ${g.age.toFixed(1)}h • Liq ${money(g.liq)} • Vol ${money(g.vol)}<br><span class="wallet">${esc(short(g.token_address))}</span></div></div><div><div class="gain">${g.gain>=0?'+':''}${g.gain.toFixed(1)}%</div><div class="tiny" style="text-align:right">${esc(g.window)}</div></div></div>`).join('')}
+async function runTop(){resetProgressColor();$('overlapSection').classList.add('hidden');$('earlySection').classList.add('hidden');$('gainersSection').classList.add('hidden');$('testBtn').disabled=true;$('topBtn').disabled=true;try{const gs=await discoverGainers();if(!gs.length)throw new Error('No new pools matched the current liquidity/volume filters.');renderGainers(gs);const scans=[];for(let i=0;i<gs.length;i++){const base=20+i*(70/gs.length),span=70/gs.length;try{scans.push(await scanToken(gs[i].token_address,gs[i].symbol,base,span))}catch(e){console.warn('Skipping',gs[i],e)}}if(scans.length<2)throw new Error('Fewer than two gainer tokens could be scanned.');const o=await overlaps(scans);renderOverlap(o);done(`Scanned ${scans.length} of the Top ${gs.length} gainers and found ${o.length} repeated early addresses.`)}catch(e){fail(e)}finally{$('testBtn').disabled=false;$('topBtn').disabled=false}}
+async function runCustom(){resetProgressColor();$('earlySection').classList.add('hidden');const a=norm($('customAddress').value);if(!a){fail(new Error('Paste a valid 0x token contract address.'));return}$('customBtn').disabled=true;try{const s=await scanToken(a,'TOKEN',0,98);renderEarly(s);done(`Found ${s.rows.length} early addresses.`)}catch(e){fail(e)}finally{$('customBtn').disabled=false}}
+$('testBtn').addEventListener('click',runTests);$('topBtn').addEventListener('click',runTop);$('customBtn').addEventListener('click',runCustom);
+</script>
+</body>
+</html>
